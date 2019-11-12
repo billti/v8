@@ -1489,6 +1489,10 @@ DEFINE_NEG_IMPLICATION(perf_prof, wasm_write_protect_code_memory)
 DEFINE_BOOL(perf_prof_unwinding_info, false,
             "Enable unwinding info for perf linux profiler (experimental).")
 DEFINE_IMPLICATION(perf_prof, perf_prof_unwinding_info)
+DEFINE_BOOL(etw_tracing, false,
+            "Enable ETW (Windows only)")
+DEFINE_BOOL(etw_tracing_chakra, false,
+            "Enable Chakra-like ETW events (Windows only)")
 DEFINE_STRING(gc_fake_mmap, "/tmp/__v8_gc__",
               "Specify the name of the file for fake gc mmap used in ll_prof")
 DEFINE_BOOL(log_internal_timer_events, false, "Time internal events.")
