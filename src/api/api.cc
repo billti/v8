@@ -123,6 +123,7 @@
 #include <versionhelpers.h>
 #include <windows.h>
 #include "include/v8-wasm-trap-handler-win.h"
+#include "src/tracing/v8-etw-provider.h"
 #include "src/trap-handler/handler-inside-win.h"
 #if defined(V8_OS_WIN64)
 #include "src/diagnostics/unwinding-info-win64.h"
@@ -8249,6 +8250,13 @@ void Isolate::Initialize(Isolate* isolate,
     code_event_handler = i::GDBJITInterface::EventHandler;
   }
 #endif  // ENABLE_GDB_JIT_INTERFACE
+#if defined(V8_TARGET_OS_WIN)
+  if (code_event_handler == nullptr &&
+      (FLAG_etw_tracing || FLAG_etw_tracing_chakra)) {
+    v8::InitializeEtw();
+    code_event_handler = v8::EtwEventHandler;
+  }
+#endif  // defined(V8_OS_WIN)
   if (code_event_handler) {
     i_isolate->InitializeLoggingAndCounters();
     i_isolate->logger()->SetCodeEventHandler(kJitCodeEventDefault,

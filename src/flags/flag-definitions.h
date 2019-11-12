@@ -1600,6 +1600,10 @@ DEFINE_PERF_PROF_IMPLICATION(perf_prof, perf_prof_unwinding_info)
 #undef DEFINE_PERF_PROF_BOOL
 #undef DEFINE_PERF_PROF_IMPLICATION
 
+DEFINE_BOOL(etw_tracing, false,
+            "Enable ETW (Windows only)")
+DEFINE_BOOL(etw_tracing_chakra, false,
+            "Enable Chakra-like ETW events (Windows only)")
 DEFINE_STRING(gc_fake_mmap, "/tmp/__v8_gc__",
               "Specify the name of the file for fake gc mmap used in ll_prof")
 DEFINE_BOOL(log_internal_timer_events, false, "Time internal events.")

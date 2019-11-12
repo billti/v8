@@ -34,6 +34,7 @@
 #endif
 
 #include <windows.h>
+#include <evntprov.h>
 
 #include <mmsystem.h>  // For timeGetTime().
 #include <signal.h>  // For raise().
