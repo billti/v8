@@ -6,6 +6,8 @@
 #if defined(V8_OS_WIN)
 
 #include "src/base/once.h"
+// TODO(billti): Below only used for v8::base::OS::Print. remove when done.
+#include "src/base/platform/platform.h"
 #include "src/flags/flags.h"
 #include "src/tracing/etw-provider.h"
 #include "src/tracing/v8-etw-provider.h"
@@ -110,6 +112,11 @@ void ChakraEtwProvider::MethodLoad(
       line, column, method_name);
 }
 
+std::unordered_map<int, std::wstring>&
+ChakraEtwProvider::GetScriptMapForIsolate(void* isolate) {
+  return this->script_map[isolate];
+}
+
 // Assigns the static on the first run. A no-op after that.
 // This is a optimization to avoid using a static local in EtwEventHandler
 // which would add some instructions on every tracing call.
@@ -129,7 +136,6 @@ void EtwEventHandler(const JitCodeEvent* event) {
   if (V8_LIKELY(!etw_provider->IsEventEnabled(etw::kLevelInfo, 0))) return;
 
   // TODO(billti): Support/test interpreted code, RegExp, Wasm, etc.
-  if (event->code_type != v8::JitCodeEvent::CodeType::JIT_CODE) return;
 
   // TODO(billti): There are events for CODE_ADD_LINE_POS_INFO and CODE_MOVED
   // Note: There is no event (currently) for code being removed.
@@ -137,26 +143,37 @@ void EtwEventHandler(const JitCodeEvent* event) {
     int name_len = static_cast<int>(event->name.len);
     // Note: event->name.str is not null terminated.
     std::wstring method_name(name_len + 1, '\0');
-    int name_chars = MultiByteToWideChar(CP_UTF8, 0, event->name.str, name_len,
-        method_name.data(), method_name.size());
+    MultiByteToWideChar(CP_UTF8, 0, event->name.str, name_len,
+        // Const cast needed as building with C++14 (not const in >= C++17)
+        const_cast<LPWSTR>(method_name.data()),
+        static_cast<int>(method_name.size()));
 
-    if(!event->script.IsEmpty()){
-      int scriptId = event->script->GetId();
-      auto scriptName = event->script->GetScriptName();
-      if (scriptName->IsString() ) {
-          char buff[1024];
-          auto str = scriptName.As<v8::String>();
-          str->WriteUtf8(event->isolate, buff, 1024);
-          // TODO(billti): Maintain a script map to write the SourceLoad events
-          // if (scriptMap.find(scriptId) != scriptMap.end()) {
-          //
-          // }
+    int script_id = 0;
+    if (!event->script.IsEmpty()) {
+      // if the first time seeing this source file, log the SourceLoad event
+      script_id = event->script->GetId();
+      auto& script_map = etw_provider->GetScriptMapForIsolate(event->isolate);
+      if (script_map.find(script_id) == script_map.end()) {
+        auto script_name = event->script->GetScriptName();
+        if (script_name->IsString()) {
+          auto v8str_name = script_name.As<v8::String>();
+          std::wstring wstr_name(v8str_name->Length(), L'\0');
+          // On Windows wchar_t == uint16_t. const_cast needed for C++14.
+          uint16_t* wstr_data = const_cast<uint16_t*>(
+              reinterpret_cast<const uint16_t*>(wstr_name.data())
+          );
+          v8str_name->Write(event->isolate, wstr_data);
+          script_map.emplace(script_id, std::move(wstr_name));
+        } else {
+          script_map.emplace(script_id, std::wstring{L"[unknown]"});
+        }
+        etw_provider->SourceLoad(script_id, event->isolate, 0,
+            script_map[script_id]);
       }
     }
 
     // TODO(billti): Can there be more than one context per isolate to handle?
     void* script_context = static_cast<void*>(event->isolate);
-    int64_t script_id = event->script.IsEmpty() ? 0 : event->script->GetId();
     void* start_address = event->code_start;
     int64_t length = static_cast<int64_t>(event->code_len);
     etw_provider->MethodLoad(script_context, start_address, length,
