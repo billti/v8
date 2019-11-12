@@ -8113,7 +8113,7 @@ void Isolate::Initialize(Isolate* isolate,
 #endif  // ENABLE_GDB_JIT_INTERFACE
 #if defined(V8_TARGET_OS_WIN)
   if (code_event_handler == nullptr &&
-      (FLAG_etw_tracing || FLAG_etw_tracing_chakra)) {
+      (i::FLAG_etw_tracing || i::FLAG_etw_tracing_chakra)) {
     v8::InitializeEtw();
     code_event_handler = v8::EtwEventHandler;
   }

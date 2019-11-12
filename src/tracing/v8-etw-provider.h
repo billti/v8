@@ -11,6 +11,7 @@
 #include "src/base/macros.h"
 
 #include <string>
+#include <unordered_map>
 
 #include "src/tracing/etw-provider.h"
 
@@ -39,6 +40,12 @@ class ChakraEtwProvider : public etw::EtwProvider {
     const std::wstring& method_name);
 
   // TODO(billti) SourceUnload & MethodUnload
+
+  std::unordered_map<int, std::wstring>& GetScriptMapForIsolate(void *);
+
+ private:
+  // For each isolate, holds a map of script_id to script_names registered.
+  std::unordered_map<void*, std::unordered_map<int, std::wstring>> script_map;
 };
 
 V8_EXPORT_PRIVATE void EtwEventHandler(const JitCodeEvent* event);
