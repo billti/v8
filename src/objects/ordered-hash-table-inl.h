@@ -22,8 +22,6 @@ namespace internal {
 
 CAST_ACCESSOR(OrderedNameDictionary)
 CAST_ACCESSOR(SmallOrderedNameDictionary)
-CAST_ACCESSOR(OrderedHashMap)
-CAST_ACCESSOR(OrderedHashSet)
 CAST_ACCESSOR(SmallOrderedHashMap)
 CAST_ACCESSOR(SmallOrderedHashSet)
 

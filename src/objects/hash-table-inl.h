@@ -213,16 +213,6 @@ void HashTable<Derived, Shape>::SetCapacity(int capacity) {
   set(kCapacityIndex, Smi::FromInt(capacity));
 }
 
-template <typename KeyT>
-bool BaseShape<KeyT>::IsKey(ReadOnlyRoots roots, Object key) {
-  return IsLive(roots, key);
-}
-
-template <typename KeyT>
-bool BaseShape<KeyT>::IsLive(ReadOnlyRoots roots, Object k) {
-  return k != roots.the_hole_value() && k != roots.undefined_value();
-}
-
 bool ObjectHashSet::Has(Isolate* isolate, Handle<Object> key, int32_t hash) {
   return FindEntry(ReadOnlyRoots(isolate), key, hash).is_found();
 }

@@ -14,7 +14,7 @@ namespace internal {
 
 class V8_EXPORT OSROptimizedCodeCache : public WeakFixedArray {
  public:
-  DECL_CAST(OSROptimizedCodeCache)
+  DECL_CAST_NO_EXPORT(OSROptimizedCodeCache)
 
   enum OSRCodeCacheConstants {
     kSharedOffset,

@@ -2874,9 +2874,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   V8_EXPORT_PRIVATE TNode<IntPtrT> EntryToIndex(TNode<IntPtrT> entry,
                                                 int field_index);
   template <typename Dictionary>
-  V8_EXPORT_PRIVATE TNode<IntPtrT> EntryToIndex(TNode<IntPtrT> entry) {
-    return EntryToIndex<Dictionary>(entry, Dictionary::kEntryKeyIndex);
-  }
+  V8_EXPORT_PRIVATE TNode<IntPtrT> EntryToIndex(TNode<IntPtrT> entry);
 
   // Loads the details for the entry with the given key_index.
   // Returns an untagged int32.

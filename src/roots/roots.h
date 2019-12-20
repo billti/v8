@@ -481,7 +481,7 @@ class ReadOnlyRoots {
   V8_INLINE explicit ReadOnlyRoots(Isolate* isolate);
 
 #define ROOT_ACCESSOR(Type, name, CamelName) \
-  V8_INLINE class Type name() const;         \
+  V8_EXPORT_PRIVATE V8_INLINE class Type name() const;         \
   V8_INLINE Handle<Type> name##_handle() const;
 
   READ_ONLY_ROOT_LIST(ROOT_ACCESSOR)

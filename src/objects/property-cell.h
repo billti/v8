@@ -14,7 +14,7 @@
 namespace v8 {
 namespace internal {
 
-class PropertyCell : public HeapObject {
+class V8_EXPORT_PRIVATE PropertyCell : public HeapObject {
  public:
   // [name]: the name of the global property.
   DECL_ACCESSORS(name, Name)
@@ -52,7 +52,7 @@ class PropertyCell : public HeapObject {
                                        Handle<PropertyCell> cell,
                                        Handle<Object> new_value);
 
-  DECL_CAST(PropertyCell)
+  DECL_CAST_NO_EXPORT(PropertyCell)
 
   // Dispatched behavior.
   DECL_PRINTER(PropertyCell)
@@ -65,6 +65,8 @@ class PropertyCell : public HeapObject {
 
   OBJECT_CONSTRUCTORS(PropertyCell, HeapObject);
 };
+
+CAST_ACCESSOR(PropertyCell)
 
 }  // namespace internal
 }  // namespace v8

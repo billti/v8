@@ -233,7 +233,7 @@ class OrderedHashTable : public FixedArray {
 class V8_EXPORT_PRIVATE OrderedHashSet
     : public OrderedHashTable<OrderedHashSet, 1> {
  public:
-  DECL_CAST(OrderedHashSet)
+  DECL_CAST_NO_EXPORT(OrderedHashSet)
 
   static MaybeHandle<OrderedHashSet> Add(Isolate* isolate,
                                          Handle<OrderedHashSet> table,
@@ -258,7 +258,7 @@ class V8_EXPORT_PRIVATE OrderedHashSet
 class V8_EXPORT_PRIVATE OrderedHashMap
     : public OrderedHashTable<OrderedHashMap, 2> {
  public:
-  DECL_CAST(OrderedHashMap)
+  DECL_CAST_NO_EXPORT(OrderedHashMap)
 
   // Returns a value if the OrderedHashMap contains the key, otherwise
   // returns undefined.
@@ -838,6 +838,9 @@ class SmallOrderedNameDictionary
   OBJECT_CONSTRUCTORS(SmallOrderedNameDictionary,
                       SmallOrderedHashTable<SmallOrderedNameDictionary>);
 };
+
+CAST_ACCESSOR(OrderedHashMap)
+CAST_ACCESSOR(OrderedHashSet)
 
 }  // namespace internal
 }  // namespace v8

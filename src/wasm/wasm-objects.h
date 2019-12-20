@@ -201,7 +201,7 @@ class WasmModuleObject : public JSObject {
 // Representation of a WebAssembly.Table JavaScript-level object.
 class V8_EXPORT_PRIVATE WasmTableObject : public JSObject {
  public:
-  DECL_CAST(WasmTableObject)
+  DECL_CAST_NO_EXPORT(WasmTableObject)
 
   // The entries array is at least as big as {current_length()}, but might be
   // bigger to make future growth more efficient.

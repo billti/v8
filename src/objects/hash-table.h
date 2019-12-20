@@ -10,6 +10,8 @@
 #include "src/base/macros.h"
 #include "src/common/globals.h"
 #include "src/execution/isolate-utils.h"
+#include "src/objects/oddball.h"
+#include "src/objects/property-cell.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/smi.h"
 #include "src/roots/roots.h"
@@ -57,14 +59,18 @@ namespace internal {
 // information by subclasses.
 
 template <typename KeyT>
-class BaseShape {
+class V8_EXPORT_PRIVATE BaseShape {
  public:
   using Key = KeyT;
   static inline RootIndex GetMapRootIndex();
   static const bool kNeedsHoleCheck = true;
   static Object Unwrap(Object key) { return key; }
-  static inline bool IsKey(ReadOnlyRoots roots, Object key);
-  static inline bool IsLive(ReadOnlyRoots roots, Object key);
+  static inline bool IsKey(ReadOnlyRoots roots, Object key) {
+    return IsLive(roots, key);
+  }
+  static inline bool IsLive(ReadOnlyRoots roots, Object key) {
+    return key != roots.the_hole_value() && key != roots.undefined_value();
+  }
 };
 
 class V8_EXPORT_PRIVATE HashTableBase : public NON_EXPORTED_BASE(FixedArray) {
@@ -333,7 +339,7 @@ extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
 class V8_EXPORT_PRIVATE ObjectHashTable
     : public ObjectHashTableBase<ObjectHashTable, ObjectHashTableShape> {
  public:
-  DECL_CAST(ObjectHashTable)
+  DECL_CAST_NO_EXPORT(ObjectHashTable)
   DECL_PRINTER(ObjectHashTable)
 
   OBJECT_CONSTRUCTORS(
@@ -360,7 +366,7 @@ extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
 class V8_EXPORT_PRIVATE EphemeronHashTable
     : public ObjectHashTableBase<EphemeronHashTable, EphemeronHashTableShape> {
  public:
-  DECL_CAST(EphemeronHashTable)
+  DECL_CAST_NO_EXPORT(EphemeronHashTable)
   DECL_PRINTER(EphemeronHashTable)
   class BodyDescriptor;
 
@@ -396,7 +402,7 @@ class V8_EXPORT_PRIVATE ObjectHashSet
   inline bool Has(Isolate* isolate, Handle<Object> key, int32_t hash);
   inline bool Has(Isolate* isolate, Handle<Object> key);
 
-  DECL_CAST(ObjectHashSet)
+  DECL_CAST_NO_EXPORT(ObjectHashSet)
 
   OBJECT_CONSTRUCTORS(ObjectHashSet,
                       HashTable<ObjectHashSet, ObjectHashSetShape>);

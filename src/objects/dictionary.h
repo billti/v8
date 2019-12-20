@@ -7,6 +7,8 @@
 
 #include "src/base/export-template.h"
 #include "src/common/globals.h"
+#include "src/objects/oddball.h"
+#include "src/objects/property-cell.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/property-array.h"
 #include "src/objects/smi.h"
@@ -176,7 +178,7 @@ extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
 class V8_EXPORT_PRIVATE NameDictionary
     : public BaseNameDictionary<NameDictionary, NameDictionaryShape> {
  public:
-  DECL_CAST(NameDictionary)
+  DECL_CAST_NO_EXPORT(NameDictionary)
 
   static const int kEntryValueIndex = 1;
   static const int kEntryDetailsIndex = 2;
@@ -207,8 +209,13 @@ class GlobalDictionaryShape : public NameDictionaryShape {
                                   InternalIndex entry, PropertyDetails value);
 
   static inline Object Unwrap(Object key);
-  static inline bool IsKey(ReadOnlyRoots roots, Object k);
-  static inline bool IsLive(ReadOnlyRoots roots, Object key);
+  static inline bool IsKey(ReadOnlyRoots roots, Object k) {
+    return IsLive(roots, k) && !PropertyCell::cast(k).value().IsTheHole(roots);
+  }
+  static inline bool IsLive(ReadOnlyRoots roots, Object key) {
+    DCHECK_NE(roots.the_hole_value(), key);
+    return key != roots.undefined_value();
+  }
   static inline RootIndex GetMapRootIndex();
 };
 
@@ -220,7 +227,7 @@ extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
 class V8_EXPORT_PRIVATE GlobalDictionary
     : public BaseNameDictionary<GlobalDictionary, GlobalDictionaryShape> {
  public:
-  DECL_CAST(GlobalDictionary)
+  DECL_CAST_NO_EXPORT(GlobalDictionary)
 
   inline Object ValueAt(InternalIndex entry);
   inline Object ValueAt(const Isolate* isolate, InternalIndex entry);

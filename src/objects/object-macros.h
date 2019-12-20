@@ -96,14 +96,25 @@
   inline void set_##name(type value, \
                          WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
+#define DECL_ACCESSORS_EXPORT(name, type)   \
+  V8_EXPORT_PRIVATE DECL_GETTER(name, type)            \
+  V8_EXPORT_PRIVATE inline void set_##name(type value, \
+                         WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
 #define DECL_CAST(Type)                                 \
+  V8_EXPORT_PRIVATE V8_INLINE static Type cast(Object object);            \
+  V8_INLINE static Type unchecked_cast(Object object) { \
+    return bit_cast<Type>(object);                      \
+  }
+
+#define DECL_CAST_NO_EXPORT(Type)                                 \
   V8_INLINE static Type cast(Object object);            \
   V8_INLINE static Type unchecked_cast(Object object) { \
     return bit_cast<Type>(object);                      \
   }
 
 #define CAST_ACCESSOR(Type) \
-  Type Type::cast(Object object) { return Type(object.ptr()); }
+  V8_EXPORT_PRIVATE Type Type::cast(Object object) { return Type(object.ptr()); }
 
 #define INT_ACCESSORS(holder, name, offset)                   \
   int holder::name() const { return ReadField<int>(offset); } \

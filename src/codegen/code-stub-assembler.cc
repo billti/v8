@@ -7743,6 +7743,11 @@ TNode<IntPtrT> CodeStubAssembler::EntryToIndex(TNode<IntPtrT> entry,
                                                field_index));
 }
 
+template <typename Dictionary>
+TNode<IntPtrT> CodeStubAssembler::EntryToIndex(TNode<IntPtrT> entry) {
+  return EntryToIndex<Dictionary>(entry, Dictionary::kEntryKeyIndex);
+}
+
 template <typename T>
 TNode<T> CodeStubAssembler::LoadDescriptorArrayElement(
     TNode<DescriptorArray> object, TNode<IntPtrT> index,
