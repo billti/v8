@@ -210,6 +210,8 @@ bool OnCriticalMemoryPressure(size_t length) {
   return true;
 }
 
+VirtualMemory::VirtualMemory() = default;
+
 VirtualMemory::VirtualMemory(v8::PageAllocator* page_allocator, size_t size,
                              void* hint, size_t alignment)
     : page_allocator_(page_allocator) {
@@ -224,6 +226,11 @@ VirtualMemory::VirtualMemory(v8::PageAllocator* page_allocator, size_t size,
     DCHECK(IsAligned(address, alignment));
     region_ = base::AddressRegion(address, size);
   }
+}
+
+Address VirtualMemory::address() const {
+  DCHECK(IsReserved());
+  return region_.begin();
 }
 
 VirtualMemory::~VirtualMemory() {

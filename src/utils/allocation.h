@@ -151,7 +151,7 @@ V8_EXPORT_PRIVATE bool OnCriticalMemoryPressure(size_t length);
 class V8_EXPORT_PRIVATE VirtualMemory final {
  public:
   // Empty VirtualMemory object, controlling no reserved memory.
-  VirtualMemory() = default;
+  VirtualMemory();
 
   // Reserves virtual memory containing an area of the given size that is
   // aligned per |alignment| rounded up to the |page_allocator|'s allocate page
@@ -199,10 +199,7 @@ class V8_EXPORT_PRIVATE VirtualMemory final {
   // If the memory was reserved with an alignment, this address is not
   // necessarily aligned. The user might need to round it up to a multiple of
   // the alignment to get the start of the aligned block.
-  Address address() const {
-    DCHECK(IsReserved());
-    return region_.begin();
-  }
+  Address address() const;
 
   Address end() const {
     DCHECK(IsReserved());

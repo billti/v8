@@ -20,11 +20,11 @@ class Node;
 
 }
 
-struct UntaggedT {};
+struct V8_EXPORT_PRIVATE UntaggedT {};
 
-struct IntegralT : UntaggedT {};
+struct V8_EXPORT_PRIVATE IntegralT : UntaggedT {};
 
-struct WordT : IntegralT {
+struct V8_EXPORT_PRIVATE WordT : IntegralT {
   static const MachineRepresentation kMachineRepresentation =
       MachineType::PointerRepresentation();
 };
@@ -70,7 +70,7 @@ struct Uint64T : Word64T {
   static constexpr MachineType kMachineType = MachineType::Uint64();
 };
 
-struct IntPtrT : WordT {
+struct V8_EXPORT_PRIVATE IntPtrT : WordT {
   static constexpr MachineType kMachineType = MachineType::IntPtr();
 };
 struct UintPtrT : WordT {
@@ -322,7 +322,7 @@ struct types_have_common_values<UnionT<T1, T2>, UnionT<U1, U2>> {
 //     and T2
 //   - UnionT<T1, T2> represents either a value of type T1 or of type T2.
 template <class T>
-class TNode {
+class V8_EXPORT_PRIVATE TNode {
  public:
   template <class U,
             typename std::enable_if<is_subtype<U, T>::value, int>::type = 0>

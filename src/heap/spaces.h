@@ -3216,7 +3216,7 @@ class ReadOnlySpace : public PagedSpace {
 // managed by the large object space.
 // Large objects do not move during garbage collections.
 
-class LargeObjectSpace : public Space {
+class V8_EXPORT_PRIVATE LargeObjectSpace : public Space {
  public:
   using iterator = LargePageIterator;
 
@@ -3240,7 +3240,7 @@ class LargeObjectSpace : public Space {
   virtual void FreeUnmarkedObjects();
 
   // Checks whether a heap object is in this space; O(1).
-  V8_EXPORT_PRIVATE bool Contains(HeapObject obj);
+  bool Contains(HeapObject obj);
   // Checks whether an address is in the object area in this space. Iterates
   // all objects in the space. May be slow.
   bool ContainsSlow(Address addr);
