@@ -40,6 +40,7 @@
 #include "src/parsing/rewriter.h"
 #include "src/parsing/scanner-character-streams.h"
 #include "src/snapshot/code-serializer.h"
+#include "src/tracing/etw-v8-provider.h"
 #include "src/utils/ostreams.h"
 #include "src/zone/zone-list-inl.h"  // crbug.com/v8/8816
 
@@ -223,21 +224,27 @@ CompilationJob::Status OptimizedCompilationJob::PrepareJob(Isolate* isolate) {
 
 CompilationJob::Status OptimizedCompilationJob::ExecuteJob(
     RuntimeCallStats* stats) {
+  etw::v8Provider.JitExecuteStart();
   DisallowHeapAccess no_heap_access;
   // Delegate to the underlying implementation.
   DCHECK_EQ(state(), State::kReadyToExecute);
   ScopedTimer t(&time_taken_to_execute_);
-  return UpdateState(ExecuteJobImpl(stats), State::kReadyToFinalize);
+  auto result = UpdateState(ExecuteJobImpl(stats), State::kReadyToFinalize);
+  etw::v8Provider.JitExecuteStop();
+  return result;
 }
 
 CompilationJob::Status OptimizedCompilationJob::FinalizeJob(Isolate* isolate) {
+  etw::v8Provider.JitFinalizeStart();
   DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
   DisallowJavascriptExecution no_js(isolate);
 
   // Delegate to the underlying implementation.
   DCHECK_EQ(state(), State::kReadyToFinalize);
   ScopedTimer t(&time_taken_to_finalize_);
-  return UpdateState(FinalizeJobImpl(isolate), State::kSucceeded);
+  auto result = UpdateState(FinalizeJobImpl(isolate), State::kSucceeded);
+  etw::v8Provider.JitFinalizeStop();
+  return result;
 }
 
 CompilationJob::Status OptimizedCompilationJob::RetryOptimization(
@@ -567,6 +574,7 @@ MaybeHandle<SharedFunctionInfo> GenerateUnoptimizedCodeForToplevel(
   parse_info->ast_value_factory()->Internalize(isolate->factory());
 
   if (!Compiler::Analyze(parse_info)) return MaybeHandle<SharedFunctionInfo>();
+  etw::v8Provider.GenerateUnoptimizedCodeStart(isolate);
   DeclarationScope::AllocateScopeInfos(parse_info, isolate);
 
   // Prepare and execute compilation of the outer-most function.
@@ -607,6 +615,7 @@ MaybeHandle<SharedFunctionInfo> GenerateUnoptimizedCodeForToplevel(
     if (job->ExecuteJob() == CompilationJob::FAILED ||
         FinalizeUnoptimizedCompilationJob(job.get(), shared_info, isolate) ==
             CompilationJob::FAILED) {
+      etw::v8Provider.GenerateUnoptimizedCodeStop(isolate);
       return MaybeHandle<SharedFunctionInfo>();
     }
 
@@ -626,6 +635,7 @@ MaybeHandle<SharedFunctionInfo> GenerateUnoptimizedCodeForToplevel(
   // Character stream shouldn't be used again.
   parse_info->ResetCharacterStream();
 
+  etw::v8Provider.GenerateUnoptimizedCodeStop(isolate);
   return top_level;
 }
 

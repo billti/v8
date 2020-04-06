@@ -12,6 +12,7 @@
 #include "src/parsing/parse-info.h"
 #include "src/parsing/parser.h"
 #include "src/parsing/scanner-character-streams.h"
+#include "src/tracing/etw-v8-provider.h"
 #include "src/zone/zone-list-inl.h"  // crbug.com/v8/8816
 
 namespace v8 {
@@ -22,6 +23,8 @@ bool ParseProgram(ParseInfo* info, Handle<Script> script, Isolate* isolate,
                   ReportErrorsAndStatisticsMode mode) {
   DCHECK(info->is_toplevel());
   DCHECK_NULL(info->literal());
+
+  etw::v8Provider.ParsingStart(isolate);
 
   VMState<PARSER> state(isolate);
 
@@ -54,6 +57,7 @@ bool ParseProgram(ParseInfo* info, Handle<Script> script, Isolate* isolate,
     }
     parser.UpdateStatistics(isolate, script);
   }
+  etw::v8Provider.ParsingStop(isolate);
   return (result != nullptr);
 }
 

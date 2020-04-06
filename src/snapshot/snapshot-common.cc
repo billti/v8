@@ -11,6 +11,7 @@
 #include "src/snapshot/partial-deserializer.h"
 #include "src/snapshot/read-only-deserializer.h"
 #include "src/snapshot/startup-deserializer.h"
+#include "src/tracing/etw-v8-provider.h"
 #include "src/utils/memcopy.h"
 #include "src/utils/version.h"
 
@@ -34,6 +35,8 @@ bool Snapshot::HasContextSnapshot(Isolate* isolate, size_t index) {
 
 bool Snapshot::Initialize(Isolate* isolate) {
   if (!isolate->snapshot_available()) return false;
+
+  etw::v8Provider.SnapshotInitStart(isolate);
   RuntimeCallTimerScope rcs_timer(isolate,
                                   RuntimeCallCounterId::kDeserializeIsolate);
   base::ElapsedTimer timer;
@@ -57,6 +60,7 @@ bool Snapshot::Initialize(Isolate* isolate) {
     int bytes = startup_data.length();
     PrintF("[Deserializing isolate (%d bytes) took %0.3f ms]\n", bytes, ms);
   }
+  etw::v8Provider.SnapshotInitStop(isolate);
   return success;
 }
 

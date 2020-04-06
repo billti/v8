@@ -114,6 +114,7 @@
 #include "src/strings/string-stream.h"
 #include "src/strings/unicode-decoder.h"
 #include "src/strings/unicode-inl.h"
+#include "src/tracing/etw-v8-provider.h"
 #include "src/utils/ostreams.h"
 #include "src/utils/utils-inl.h"
 #include "src/wasm/wasm-engine.h"
@@ -5319,6 +5320,11 @@ void SharedFunctionInfo::DisableOptimization(BailoutReason reason) {
     PrintF("[disabled optimization for ");
     ShortPrint();
     PrintF(", reason: %s]\n", GetBailoutReason(reason));
+  }
+  if (etw::v8Provider.IsEnabled()) {
+    std::string fn_name{this->DebugName().ToCString().get()};
+    std::string bailout_reason{GetBailoutReason(reason)};
+    etw::v8Provider.DisableOpt(fn_name, bailout_reason);
   }
 }
 

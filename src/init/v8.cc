@@ -24,6 +24,7 @@
 #include "src/objects/objects-inl.h"
 #include "src/profiler/heap-profiler.h"
 #include "src/snapshot/snapshot.h"
+#include "src/tracing/etw-v8-provider.h"
 #include "src/tracing/tracing-category-observer.h"
 #include "src/wasm/wasm-engine.h"
 
@@ -40,6 +41,7 @@ V8_DECLARE_ONCE(init_snapshot_once);
 v8::Platform* V8::platform_ = nullptr;
 
 bool V8::Initialize() {
+  etw::v8Provider.InitializeV8();
   InitializeOncePerProcess();
   return true;
 }
@@ -53,6 +55,7 @@ void V8::TearDown() {
   ElementsAccessor::TearDown();
   RegisteredExtension::UnregisterAll();
   FlagList::ResetAllFlags();  // Frees memory held by string arguments.
+  etw::v8Provider.TearDownV8();
 }
 
 void V8::InitializeOncePerProcessImpl() {
@@ -123,6 +126,8 @@ void V8::InitializeOncePerProcess() {
 }
 
 void V8::InitializePlatform(v8::Platform* platform) {
+  etw::v8Provider.RegisterEtwProvider();
+  etw::v8Provider.InitializePlatform();
   CHECK(!platform_);
   CHECK(platform);
   platform_ = platform;
@@ -135,6 +140,8 @@ void V8::ShutdownPlatform() {
   v8::tracing::TracingCategoryObserver::TearDown();
   v8::base::SetPrintStackTrace(nullptr);
   platform_ = nullptr;
+  etw::v8Provider.ShutdownPlatform();
+  etw::v8Provider.UnregisterEtwProvider();
 }
 
 v8::Platform* V8::GetCurrentPlatform() {
