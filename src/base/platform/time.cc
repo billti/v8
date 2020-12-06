@@ -504,10 +504,21 @@ std::ostream& operator<<(std::ostream& os, const Time& time) {
 
 namespace {
 
-// We define a wrapper to adapt between the __stdcall and __cdecl call of the
+#if defined(WINUWP)
+// UWP doesn't support the timeGetTime WIN32 API.
+DWORD timeGetTimeWrapper() {
+  int64_t fileTime;
+  GetSystemTimePreciseAsFileTime((LPFILETIME)&fileTime);
+  // We want system time in milliseconds as a DWORD. FILETIME is in 100ns.
+  fileTime /= 10 * 1000;
+  return (DWORD)fileTime;
+}
+#else
+    // We define a wrapper to adapt between the __stdcall and __cdecl call of the
 // mock function, and to avoid a static constructor.  Assigning an import to a
 // function pointer directly would require setup code to fetch from the IAT.
 DWORD timeGetTimeWrapper() { return timeGetTime(); }
+#endif  // defined(WINUWP)
 
 DWORD (*g_tick_function)(void) = &timeGetTimeWrapper;
 
@@ -799,6 +810,18 @@ ThreadTicks ThreadTicks::Now() {
 
 #if V8_OS_WIN
 ThreadTicks ThreadTicks::GetForThread(const HANDLE& thread_handle) {
+#if defined(WINUWP)
+  // UWP doesn't support the "QueryThreadCycleTime" API. As ThreadTicks only
+  // appear to be used for tracing/logging, just go with the combined kernel
+  // and user mode elapsed time for the thread.
+  int64_t creationTime = 0, exitTime = 0, kernelTime = 0, userTime = 0;
+  if (!GetThreadTimes(thread_handle,
+                      (LPFILETIME)&creationTime, (LPFILETIME)&exitTime,
+                      (LPFILETIME)&kernelTime, (LPFILETIME)userTime)) {
+    throw "Call to GetThreadTimes failed";
+  }
+  return ThreadTicks(kernelTime + userTime);
+#else
   DCHECK(IsSupported());
 
   // Get the number of TSC ticks used by the current thread.
@@ -814,6 +837,7 @@ ThreadTicks ThreadTicks::GetForThread(const HANDLE& thread_handle) {
   double thread_time_seconds = thread_cycle_time / tsc_ticks_per_second;
   return ThreadTicks(
       static_cast<int64_t>(thread_time_seconds * Time::kMicrosecondsPerSecond));
+#endif // defined(WINUWP)
 }
 
 // static

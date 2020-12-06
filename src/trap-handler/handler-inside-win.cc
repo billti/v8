@@ -84,6 +84,7 @@ bool TryHandleWasmTrap(EXCEPTION_POINTERS* exception) {
   // Clear g_thread_in_wasm_code, primarily to protect against nested faults.
   g_thread_in_wasm_code = false;
 
+#if !defined(WINUWP)
   const EXCEPTION_RECORD* record = exception->ExceptionRecord;
 
   uintptr_t fault_addr = reinterpret_cast<uintptr_t>(record->ExceptionAddress);
@@ -95,6 +96,7 @@ bool TryHandleWasmTrap(EXCEPTION_POINTERS* exception) {
     g_thread_in_wasm_code = true;
     return true;
   }
+#endif
 
   // If we get here, it's not a recoverable wasm fault, so we go to the next
   // handler. Leave the g_thread_in_wasm_code flag unset since we do not return

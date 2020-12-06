@@ -50,6 +50,11 @@ long WINAPI StackDumpExceptionFilter(EXCEPTION_POINTERS* info) {  // NOLINT
 }
 
 bool InitializeSymbols() {
+#if defined(WINUWP)
+  g_initialized_symbols = true;
+  // UWP apps don't support the APIs exposed by dbghelp.h
+  return false;
+#else
   if (g_initialized_symbols) return g_init_error == ERROR_SUCCESS;
   g_initialized_symbols = true;
   // Defer symbol load until they're needed, use undecorated names, and get line
@@ -95,6 +100,7 @@ bool InitializeSymbols() {
 
   g_init_error = ERROR_SUCCESS;
   return true;
+#endif // defined(WINUWP)
 }
 
 // For the given trace, attempts to resolve the symbols, and output a trace
@@ -108,6 +114,10 @@ bool InitializeSymbols() {
 // extensible like PathService since that can in turn fire CHECKs.
 void OutputTraceToStream(const void* const* trace, size_t count,
                          std::ostream* os) {
+#if defined(WINUWP)
+  // UWP apps don't support APIs and types used here
+  return;
+#else
   for (size_t i = 0; (i < count) && os->good(); ++i) {
     const int kMaxNameLength = 256;
     DWORD_PTR frame = reinterpret_cast<DWORD_PTR>(trace[i]);
@@ -148,6 +158,7 @@ void OutputTraceToStream(const void* const* trace, size_t count,
     }
     (*os) << "\n";
   }
+#endif // defined(WINUWP)
 }
 
 }  // namespace
@@ -180,6 +191,10 @@ StackTrace::StackTrace(EXCEPTION_POINTERS* exception_pointers) {
 StackTrace::StackTrace(const CONTEXT* context) { InitTrace(context); }
 
 void StackTrace::InitTrace(const CONTEXT* context_record) {
+#if defined(WINUWP)
+  return;
+#else
+
   // StackWalk64 modifies the register context in place, so we have to copy it
   // so that downstream exception handlers get the right context.  The incoming
   // context may have had more register state (YMM, etc) than we need to unwind
@@ -224,6 +239,7 @@ void StackTrace::InitTrace(const CONTEXT* context_record) {
   }
 
   for (size_t i = count_; i < arraysize(trace_); ++i) trace_[i] = nullptr;
+#endif // defined(WINUWP)
 }
 
 void StackTrace::Print() const { OutputToStream(&std::cerr); }

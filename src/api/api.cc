@@ -11230,12 +11230,12 @@ RegisterState::RegisterState()
     : pc(nullptr), sp(nullptr), fp(nullptr), lr(nullptr) {}
 RegisterState::~RegisterState() = default;
 
-RegisterState::RegisterState(const RegisterState& other) V8_NOEXCEPT {
+RegisterState::RegisterState(const RegisterState& other) {
   *this = other;
 }
 
 RegisterState& RegisterState::operator=(const RegisterState& other)
-    V8_NOEXCEPT {
+    {
   if (&other != this) {
     pc = other.pc;
     sp = other.sp;

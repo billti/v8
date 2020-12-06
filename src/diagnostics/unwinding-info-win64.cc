@@ -17,6 +17,10 @@
 #error "Unsupported OS"
 #endif  // V8_OS_WIN_X64
 
+#if defined(WINUWP)
+#define IsWindows8OrGreater() (true)
+#endif
+
 namespace v8 {
 namespace internal {
 namespace win64_unwindinfo {
@@ -457,13 +461,16 @@ void InitUnwindingRecord(Record* record, size_t code_size_in_bytes) {
 
 namespace {
 
+#if !defined(WINUWP)
 V8_DECLARE_ONCE(load_ntdll_unwinding_functions_once);
 static decltype(
     &::RtlAddGrowableFunctionTable) add_growable_function_table_func = nullptr;
 static decltype(
     &::RtlDeleteGrowableFunctionTable) delete_growable_function_table_func =
     nullptr;
+#endif
 
+#if !defined(WINUWP)
 void LoadNtdllUnwindingFunctions() {
   base::CallOnce(&load_ntdll_unwinding_functions_once, []() {
     // Load functions from the ntdll.dll module.
@@ -510,10 +517,12 @@ void DeleteGrowableFunctionTable(PVOID dynamic_table) {
 
   delete_growable_function_table_func(dynamic_table);
 }
+#endif // !defined(WINUWP)
 
 }  // namespace
 
 void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
+#if !defined(WINUWP)
   DCHECK(CanRegisterUnwindInfoForNonABICompliantCodeRange());
 
   // When the --win64-unwinding-info flag is set, we call
@@ -561,9 +570,11 @@ void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
     CHECK(VirtualProtect(start, sizeof(CodeRangeUnwindingRecord),
                          PAGE_EXECUTE_READ, &old_protect));
   }
+#endif
 }
 
 void UnregisterNonABICompliantCodeRange(void* start) {
+#if !defined(WINUWP)
   DCHECK(CanRegisterUnwindInfoForNonABICompliantCodeRange());
 
   if (RegisterUnwindInfoForExceptionHandlingOnly()) {
@@ -583,6 +594,7 @@ void UnregisterNonABICompliantCodeRange(void* start) {
       DeleteGrowableFunctionTable(record->dynamic_table);
     }
   }
+#endif
 }
 
 #if defined(V8_OS_WIN_X64)

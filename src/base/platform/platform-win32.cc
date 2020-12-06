@@ -33,6 +33,10 @@
 #include <crtdbg.h>  // NOLINT
 #endif               // defined(_MSC_VER)
 
+#if defined(WINUWP)
+#define IsWindows10OrGreater() (true)
+#endif
+
 // Extra functions for MinGW. Most of these are the _s functions which are in
 // the Microsoft Visual Studio C++ CRT.
 #ifdef __MINGW32__
@@ -128,7 +132,9 @@ class WindowsTimezoneCache : public TimezoneCache {
     if (initialized_) return;
 
     // Initialize POSIX time zone data.
+#if !defined(WINUWP)
     _tzset();
+#endif
     // Obtain timezone information from operating system.
     memset(&tzinfo_, 0, sizeof(tzinfo_));
     if (GetTimeZoneInformation(&tzinfo_) == TIME_ZONE_ID_INVALID) {
@@ -303,6 +309,9 @@ double Win32Time::ToJSTime() {
 
 // Set timestamp to current time.
 void Win32Time::SetToCurrentTime() {
+#if defined(WINUWP)
+  GetSystemTimePreciseAsFileTime(&this->time_.ft_);
+#else
   // The default GetSystemTimeAsFileTime has a ~15.5ms resolution.
   // Because we're fast, we like fast timers which have at least a
   // 1ms resolution.
@@ -354,6 +363,7 @@ void Win32Time::SetToCurrentTime() {
   // Finally, compute the actual time.  Why is this so hard.
   DWORD elapsed = ticks_now - init_ticks;
   this->time_.t_ = init_time.t_ + (static_cast<int64_t>(elapsed) * 10000);
+#endif // defined(WINUWP)
 }
 
 
@@ -877,11 +887,25 @@ bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
     return VirtualFree(address, size, MEM_DECOMMIT) != 0;
   }
   DWORD protect = GetProtectionFromMemoryPermission(access);
+#if defined(WINUWP)
+  // UWP doesn't allow to set any pages as executable from VirtualAlloc, so do
+  // it in two steps.
+  if (!VirtualAllocFromApp(address, size, MEM_COMMIT, 0x01 /* PAGE_NO_ACCESS */)) {
+    return false;
+  }
+  ULONG old_protection = 0;
+  return (VirtualProtectFromApp(address, size, protect, &old_protection) != 0);
+#else
   return VirtualAlloc(address, size, MEM_COMMIT, protect) != nullptr;
+#endif // defined(WINUWP)
 }
 
 // static
 bool OS::DiscardSystemPages(void* address, size_t size) {
+#if defined(WINUWP)
+  DWORD ret = DiscardVirtualMemory(address, size);
+  if (!ret) return true;
+#else
   // On Windows, discarded pages are not returned to the system immediately and
   // not guaranteed to be zeroed when returned to the application.
   using DiscardVirtualMemoryFunction =
@@ -900,6 +924,7 @@ bool OS::DiscardSystemPages(void* address, size_t size) {
     DWORD ret = discard_function(address, size);
     if (!ret) return true;
   }
+#endif // defined(WINUWP)
   // DiscardVirtualMemory is buggy in Win10 SP0, so fall back to MEM_RESET on
   // failure.
   void* ptr = VirtualAlloc(address, size, MEM_RESET, PAGE_READWRITE);
@@ -974,6 +999,9 @@ class Win32MemoryMappedFile final : public OS::MemoryMappedFile {
 // static
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name,
                                                  FileMode mode) {
+#if defined(WINUWP)
+  throw "Memory mapped files not supported in V8 for UWP platform";
+#else
   // Open a physical file.
   DWORD access = GENERIC_READ;
   if (mode == FileMode::kReadWrite) {
@@ -998,11 +1026,16 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name,
       (mode == FileMode::kReadOnly) ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS;
   void* memory = MapViewOfFile(file_mapping, view_access, 0, 0, size);
   return new Win32MemoryMappedFile(file, file_mapping, memory, size);
+#endif // defined(WINUWP)
 }
 
 // static
 OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
                                                    size_t size, void* initial) {
+#if defined(WINUWP)
+  throw "Memory mapped files not supported in V8 for UWP platform";
+#else
+
   // Open a physical file.
   HANDLE file = CreateFileA(name, GENERIC_READ | GENERIC_WRITE,
                             FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
@@ -1017,6 +1050,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
   void* memory = MapViewOfFile(file_mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
   if (memory) memmove(memory, initial, size);
   return new Win32MemoryMappedFile(file, file_mapping, memory, size);
+#endif // defined(WINUWP)
 }
 
 
@@ -1069,7 +1103,7 @@ Win32MemoryMappedFile::~Win32MemoryMappedFile() {
 #endif
 
 // DbgHelp isn't supported on MinGW yet
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(WINUWP)
 // DbgHelp.h functions.
 using DLL_FUNC_TYPE(SymInitialize) = BOOL(__stdcall*)(IN HANDLE hProcess,
                                                       IN PSTR UserSearchPath,
@@ -1290,7 +1324,7 @@ int OS::ActivationFrameAlignment() {
 #if (defined(_WIN32) || defined(_WIN64))
 void EnsureConsoleOutputWin32() {
   UINT new_flags =
-      SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX;
+      0x8003; // SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX;
   UINT existing_flags = SetErrorMode(new_flags);
   SetErrorMode(existing_flags | new_flags);
 #if defined(_MSC_VER)
